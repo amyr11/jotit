@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+
+import sys
+from datetime import datetime
+import os
+import subprocess
+
+LOG_FILE = os.path.expanduser("~/diary.log")
+
+
+def write_entry(entry):
+    current_time = datetime.now().strftime("%B %d, %Y | %I:%M %p")
+    new_entry = f"{current_time}\n\n{'\n'.join(['    ' + line for line in entry.splitlines()])}\n\n---\n\n"
+
+    if os.path.exists(LOG_FILE):
+        with open(LOG_FILE, "r+") as file:
+            content = file.read()
+            file.seek(0, 0)
+            file.write(new_entry + content)
+    else:
+        with open(LOG_FILE, "w") as file:
+            file.write(new_entry)
+
+
+def show_log():
+    try:
+        with open(LOG_FILE, "r") as file:
+            # Use 'less' to view the file contents with scrolling capability
+            subprocess.run(["less"], stdin=file)
+    except FileNotFoundError:
+        print("No entries found. Start writing by using `jotit 'Your entry here'`")
+
+
+def export_log():
+    try:
+        with open(LOG_FILE, "r") as file:
+            content = file.read()
+        with open("diary_export.txt", "w") as export_file:
+            export_file.write(content)
+        print("Entries exported to diary_export.txt")
+    except FileNotFoundError:
+        print("No entries found to export.")
+
+
+def clear_log():
+    confirmation = input(
+        "Are you sure you want to clear all entries? This action cannot be undone. (y/n): "
+    )
+    if confirmation.lower() == "y":
+        with open(LOG_FILE, "w") as file:
+            pass  # Clearing the file by opening it in write mode
+        print("All entries have been cleared.")
+    else:
+        print("Clear action canceled.")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage:")
+        print("  jotit 'Your entry here' - to write a new entry")
+        print("  jotit log              - to display all entries")
+        print("  jotit export           - to export entries to diary_export.txt")
+        print("  jotit clear            - to clear all entries in diary.log")
+        return
+
+    command = sys.argv[1]
+
+    if command == "log":
+        show_log()
+    elif command == "export":
+        export_log()
+    elif command == "clear":
+        clear_log()
+    else:
+        entry = " ".join(sys.argv[1:])  # Combine all arguments into a single string
+        write_entry(entry)
+        print("Entry added.")
+
+
+if __name__ == "__main__":
+    main()
